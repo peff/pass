@@ -180,3 +180,20 @@ and not too much harder to use.
 Some people might prefer another format, like JSON, over YAML. I think
 YAML is easier for humans to write. The system could potentially allow
 both (since it never writes, but only reads).
+
+It would be helpful to integrate with tools that want to access the
+passwords. I currently tie this to git with the following config:
+
+    [credential "https://github.com"]
+      username = peff
+      helper = "!f() { test $1 = get && echo password=$(pass -n github.password); }; f"
+
+though you could also build a fancier helper around it (e.g., storing
+the URL along with the username and password, and then comparing it to
+the URL git is trying to access).
+
+I also have a firefox extension that will fill form fields from the
+`pass` program. The tricky thing is keeping a mapping of URL and XPath
+selectors from the document into fields within the password file. But
+with some standardization of the password schema, this could be cleaned
+up into a real (read-only) password provider.
