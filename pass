@@ -1,0 +1,139 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings qw(all FATAL);
+use YAML qw();
+use Getopt::Long;
+
+my $home = $ENV{PASS_HOME} || "$ENV{HOME}/.pass";
+my $file = $ENV{PASS_FILE} || "$home/pass.gpg";
+
+# hack because YAML refuses to remember the order of parsing.
+# Keys mentioned below take precedence over unmentioned ones,
+# and order of mention determines precedence.
+my %SORT_MAGIC = do {
+  my $n = 0;
+  map { $_ => $n++ } (
+    qw(desc),
+    qw(id user number password pin),
+    qw(routing account),
+  );
+};
+
+my $no_key;
+my $cmd = 'grep';
+Getopt::Long::Configure("bundling");
+GetOptions(
+  'no-key|n' => \$no_key,
+  'list|l' => sub { $cmd = 'list' },
+  'paste|p' => sub { $cmd = 'paste' },
+) or exit 100;
+
+my @entries = match_entries(decrypt($file), @ARGV);
+
+if ($cmd eq 'grep') {
+  foreach my $e (@entries) {
+    print $e->[0], ' ' unless $no_key;
+    print $e->[1], "\n";
+  }
+}
+elsif ($cmd eq 'list') {
+  foreach my $e (@entries) {
+    print $e->[0], "\n";
+  }
+}
+elsif ($cmd eq 'paste') {
+  open(my $out, '|-', qw(xsel -i));
+  foreach my $e (@entries) {
+    print $out $e->[1], "\n";
+  }
+}
+exit 0;
+
+sub decrypt {
+  my $fn = shift;
+  return "" unless -e $fn;
+  open(my $fh, '-|', "gpg -qd --no-tty <" . quotemeta($fn));
+  local $/;
+  return YAML::Load(<$fh>);
+}
+
+# Poor man's xpath.
+sub match_entries_recurse {
+  my ($entry, $k, $root, $can_skip) = @_;
+
+  # If we are at a leaf node, match only if we have
+  # no key left to match.
+  if (ref($entry) ne 'HASH') {
+    if (!@$k) {
+      my $fullname = join('.', @$root);
+      return ([$fullname, $entry]);
+    }
+    return ();
+  }
+
+  my @r;
+  foreach my $name (sort keycmp keys(%$entry)) {
+    my $child = $entry->{$name};
+    push @$root, $name;
+
+    # If we have no key left, then everything under
+    # us is a match.
+    if (!@$k) {
+      push @r, match_entries_recurse($child, $k, $root, $can_skip);
+    }
+    # Otherwise, we must match the key, or we
+    # can skip front nodes. We need to do both
+    # if possible, because always consuming key
+    # will miss something like searching for
+    # "foo.bar" in "foo.foo.bar".
+    else {
+      if (entry_matches($name, $child, $k->[0])) {
+        my $matched = shift @$k;
+        push @r, match_entries_recurse($child, $k, $root, 0);
+        unshift @$k, $matched;
+      }
+      if ($can_skip) {
+        push @r, match_entries_recurse($child, $k, $root, $can_skip);
+      }
+    }
+
+    pop @$root;
+  }
+  return @r;
+}
+
+sub entry_matches {
+  my ($name, $entry, $k) = @_;
+  return 1 if $name =~ $k;
+  return 1 if ref($entry) eq 'HASH' &&
+              exists($entry->{desc}) &&
+              $entry->{desc} =~ $k;
+  return 0;
+}
+
+sub keycmp {
+  if (exists $SORT_MAGIC{$a}) {
+    if (exists $SORT_MAGIC{$b}) {
+      return $SORT_MAGIC{$a} - $SORT_MAGIC{$b};
+    }
+    return -1;
+  }
+  if (exists $SORT_MAGIC{$b}) {
+    return 1;
+  }
+  return $a cmp $b;
+}
+
+sub match_entries {
+  my $entries = shift;
+  my @r;
+
+  foreach my $k (@_) {
+    my @regexes = map { qr/$_/i } split /\./, $k;
+    push @r, match_entries_recurse($entries, \@regexes, [], 1);
+  }
+
+  my %seen;
+  return grep { !$seen{$_->[0]}++; } @r;
+}
