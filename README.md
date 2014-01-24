@@ -96,7 +96,7 @@ To setup a password store, you need to do the following:
 
   1. Copy `pass` somewhere in your `$PATH`.
 
-       cp `pass` ~/local/bin
+        cp pass ~/local/bin
 
   2. Create a gpg key if you don't already have one. Make sure you're
      using the gpg-agent for convenience.
