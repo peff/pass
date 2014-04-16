@@ -162,6 +162,39 @@ parts also match, so `a.b` will match `a.b.c` and `a.b.d`). Elements
 between key parts must be matched (so `a.c` does not match `a.b.c`).
 
 
+Pentadactyl Plugin
+------------------
+
+If you use the `pentadactyl` plugin for Firefox, there is a drop-in
+plugin that can help with filling form fields from `pass` data:
+
+  1. Copy the `autofill` plugin to your `.pentadactyl` directory:
+
+        mkdir -p ~/.pentadactyl/plugins
+        cp pentadactyl/autofill.js ~/.pentadactyl/plugins/
+
+  2. Map URLs to `pass` sections (here, `example.user` and
+     `example.pass` will be used to fill input elements):
+
+        cat >~/.pentadactyl/pass.js <<\EOF
+        plugins.autofill.add('^https://example\.com/', 'example');
+        EOF
+
+  3. Bind form-filling to a key (I use `Ctrl-F`), and load the mappings:
+
+        cat >>~/.pentadactylrc <<\EOF
+        loadplugins autofill
+        runtime pass.js
+        map <C-f> :js plugins.autofill.fill();<CR>
+        imap <C-f> <Esc>:js plugins.autofill.fill();<CR>
+        EOF
+
+With the steps above, hitting `Ctrl-F` at `example.com` will fill any
+input elements that look like usernames with the contents of
+`example.user`, and any that look like passwords with
+`example.password`.
+
+
 Todo
 ----
 
@@ -192,8 +225,9 @@ though you could also build a fancier helper around it (e.g., storing
 the URL along with the username and password, and then comparing it to
 the URL git is trying to access).
 
-I also have a firefox extension that will fill form fields from the
-`pass` program. The tricky thing is keeping a mapping of URL and XPath
-selectors from the document into fields within the password file. But
-with some standardization of the password schema, this could be cleaned
-up into a real (read-only) password provider.
+The pentadactyl extension is rather simplistic. Manually constructing
+URL regexes is error-prone (and has security implications if you are too
+liberal). It looks only for `user` and `password` in input elements;
+this matching heuristics probably need to be expanded. Firefox's
+password manager already solves this problem, and it would be nice if we
+could piggyback on that.
