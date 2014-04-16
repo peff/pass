@@ -173,14 +173,27 @@ plugin that can help with filling form fields from `pass` data:
         mkdir -p ~/.pentadactyl/plugins
         cp pentadactyl/autofill.js ~/.pentadactyl/plugins/
 
-  2. Map URLs to `pass` sections (here, `example.user` and
-     `example.pass` will be used to fill input elements):
+  2. Add a `url` field to your pass stanzas. E.g.:
+
+        example:
+            desc: My Example Site
+            url: https://example.com
+            user: foo
+            password: bar
+
+  3. Auto-generate a mapping of URLs to stanzas:
+
+        pass --generate-autofill >~/.pentadactyl/pass.js
+
+     You can also do the mapping by hand if you do not want to keep the
+     URLs in your password file (but take care to make your URL regexes
+     sufficiently restrictive):
 
         cat >~/.pentadactyl/pass.js <<\EOF
         plugins.autofill.add('^https://example\.com/', 'example');
         EOF
 
-  3. Bind form-filling to a key (I use `Ctrl-F`), and load the mappings:
+  4. Bind form-filling to a key (I use `Ctrl-F`), and load the mappings:
 
         cat >>~/.pentadactylrc <<\EOF
         loadplugins autofill
@@ -225,9 +238,7 @@ though you could also build a fancier helper around it (e.g., storing
 the URL along with the username and password, and then comparing it to
 the URL git is trying to access).
 
-The pentadactyl extension is rather simplistic. Manually constructing
-URL regexes is error-prone (and has security implications if you are too
-liberal). It looks only for `user` and `password` in input elements;
-this matching heuristics probably need to be expanded. Firefox's
-password manager already solves this problem, and it would be nice if we
-could piggyback on that.
+The pentadactyl extension is rather simplistic. It looks only for `user`
+and `password` in input elements; this matching heuristics probably need
+to be expanded. Firefox's password manager already solves this problem,
+and it would be nice if we could piggyback on that.

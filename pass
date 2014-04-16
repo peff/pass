@@ -21,13 +21,20 @@ my %SORT_MAGIC = do {
 };
 
 my $no_key;
+my $generate_autofill;
 my $cmd = 'grep';
 Getopt::Long::Configure("bundling");
 GetOptions(
   'no-key|n' => \$no_key,
   'list|l' => sub { $cmd = 'list' },
   'paste|p' => sub { $cmd = 'paste' },
+  'generate-autofill' => \$generate_autofill,
 ) or exit 100;
+
+if ($generate_autofill) {
+  generate_autofill(decrypt($file));
+  exit 0;
+}
 
 my @entries = match_entries(decrypt($file), @ARGV);
 
@@ -136,4 +143,29 @@ sub match_entries {
 
   my %seen;
   return grep { !$seen{$_->[0]}++; } @r;
+}
+
+sub generate_autofill {
+  my $data = shift;
+  my $url = $data->{fillurl} || $data->{url};
+
+  if ($url) {
+    my $re = quote_url_regex($url);
+    my $root = join('.', @_);
+    print "plugins.autofill.add('$re', '$root');\n";
+  }
+
+  foreach my $k (keys %$data) {
+    if (ref($data->{$k}) eq 'HASH') {
+      generate_autofill($data->{$k}, @_, $k);
+    }
+  }
+}
+
+sub quote_url_regex {
+  local $_ = shift;
+  s/\\/\\\\/g;
+  s/\./\\./g;
+  s/'/\\'/g;
+  return "^$_(\$|[/?])";
 }
