@@ -5,6 +5,12 @@ function getField(id)
   return io.system("pass -n " + escape(id));
 }
 
+function fillField(elem, id)
+{
+  elem.focus();
+  elem.value = getField(id);
+}
+
 function fill()
 {
   for (i in fills) {
@@ -12,10 +18,10 @@ function fill()
     if (!fills[i][0].test(doc.URL)) continue;
     for (let elem in DOM.XPath('//input', doc)) {
       if (elem.id.match(/user/i)) {
-        elem.value = getField(fills[i][1] + ".user");
+        fillField(elem, fills[i][1] + ".user");
       }
       else if (elem.type == "password" && elem.id.match(/pass/i)) {
-        elem.value = getField(fills[i][1] + ".pass");
+        fillField(elem, fills[i][1] + ".pass");
       }
     }
   }
