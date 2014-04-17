@@ -14,7 +14,7 @@ function fill()
       if (elem.id.match(/user/i)) {
         elem.value = getField(fills[i][1] + ".user");
       }
-      else if (elem.id.match(/password/i)) {
+      else if (elem.type == "password" && elem.id.match(/pass/i)) {
         elem.value = getField(fills[i][1] + ".pass");
       }
     }
