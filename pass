@@ -28,12 +28,16 @@ GetOptions(
   'no-key|n' => \$no_key,
   'list|l' => sub { $cmd = 'list' },
   'paste|p' => sub { $cmd = 'paste' },
-  'generate-autofill' => \$generate_autofill,
+  'autofill' => sub { $cmd = 'autofill' },
 ) or exit 100;
 
-if ($generate_autofill) {
-  generate_autofill(decrypt($file));
-  exit 0;
+if ($cmd eq 'autofill') {
+  my ($user, $pass) = autofill(decrypt($file), @ARGV);
+  if (defined $user && defined $pass) {
+    print "$user\n$pass\n";
+    exit 0;
+  }
+  exit 1;
 }
 
 my @entries = match_entries(decrypt($file), @ARGV);
@@ -145,28 +149,50 @@ sub match_entries {
   return grep { !$seen{$_->[0]}++; } @r;
 }
 
-sub generate_autofill {
+sub autofill {
+  eval 'require URI' or die "unable to load URI module";
   my $data = shift;
-  my $url = $data->{fillurl} || $data->{url};
-
-  if ($url) {
-    my $re = quote_url_regex($url);
-    my $root = join('.', @_);
-    print "plugins.autofill.add('$re', '$root');\n";
-  }
-
-  foreach my $k (keys %$data) {
-    if (ref($data->{$k}) eq 'HASH') {
-      generate_autofill($data->{$k}, @_, $k);
-    }
-  }
+  my $uri = URI->new(shift);
+  return autofill_recurse($data, $uri);
 }
 
-sub quote_url_regex {
-  local $_ = shift;
-  s/\\/\\\\/g;
-  s/\./\\./g;
-  s/'/\\'/g;
-  s{[^/]$}{$&(\$|[/?])};
-  return "^$_";
+sub autofill_recurse {
+  my ($data, $want) = @_;
+
+  return unless ref($data) eq 'HASH';
+
+  my $url = $data->{url};
+  my $user = one_of($data, qw(user username));
+  my $pass = one_of($data, qw(pass password));
+
+  if (defined $url && defined $user && defined $pass) {
+    my $have = URI->new($url);
+    if (autofill_match_uri($have, $want)) {
+      return ($user, $pass);
+    }
+  }
+
+  foreach my $k (sort keys(%$data)) {
+    my @r = autofill_recurse($data->{$k}, $want);
+    @r and return @r;
+  }
+  return ();
+}
+
+sub autofill_match_uri {
+  my ($one, $two) = @_;
+
+  # Our strategy is to be picky about hostnames matching exactly,
+  # which might have false negatives, but not false positives. But
+  # we are lenient with the path; we assume that all paths at the
+  # same host are under the same control.
+  return $one->host eq $two->host;
+}
+
+sub one_of {
+  my $data = shift;
+  foreach my $option (@_) {
+    return $data->{$option} if exists $data->{$option};
+  }
+  return undef;
 }
