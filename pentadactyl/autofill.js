@@ -4,7 +4,7 @@ function fill()
   fields = io.system(["pass", "--autofill", doc.URL]).output.split("\n", 2);
   if (fields.length != 2)
     return;
-  for (let elem in DOM.XPath('//input', doc)) {
+  for (let elem of DOM.XPath('//input', doc)) {
     if (elem.id.match(/user/i)) {
       elem.focus();
       elem.value = fields[0];
