@@ -6,7 +6,7 @@ use YAML qw();
 use Getopt::Long;
 
 my $home = $ENV{PASS_HOME} || "$ENV{HOME}/.pass";
-my $file = $ENV{PASS_FILE} || "$home/pass.gpg";
+my @files = glob($ENV{PASS_FILE} || "$home/*.gpg");
 
 # hack because YAML refuses to remember the order of parsing.
 # Keys mentioned below take precedence over unmentioned ones,
@@ -32,15 +32,18 @@ GetOptions(
 ) or exit 100;
 
 if ($cmd eq 'autofill') {
-  my ($user, $pass) = autofill(decrypt($file), @ARGV);
-  if (defined $user && defined $pass) {
-    print "$user\n$pass\n";
-    exit 0;
+  foreach my $file (@files) {
+    my ($user, $pass) = autofill(decrypt($file), @ARGV);
+
+    if (defined $user && defined $pass) {
+      print "$user\n$pass\n";
+      exit 0;
+    }
   }
   exit 1;
 }
 
-my @entries = match_entries(decrypt($file), @ARGV);
+my @entries = map { match_entries(decrypt($_), @ARGV) } @files;
 
 if ($cmd eq 'grep') {
   foreach my $e (@entries) {
