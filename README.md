@@ -1,6 +1,28 @@
 Pass - a very simple password storage mechanism
 ===============================================
 
+NOTE
+----
+
+This software is no longer actively developed or maintained. I have
+switched to using the (confusingly similar-named) tool from
+https://www.passwordstore.org/. The general ideas are substantially
+similar, the main differences being:
+
+  - this tool uses a single file versus one per item, which obscures
+    some metadata at the cost of less flexibility (e.g., you cannot use
+    this `pass` to share subsets of your repository with another gpg
+    key)
+
+  - the zx2c4 `pass` actually has an active community with up-to-date
+    ecosystem tools, like https://github.com/passff/passff
+
+So while I don't know of any particular problems with this software, I
+overall recommend _not_ using it in favor of the zx2c4 tool.
+
+Introduction
+------------
+
 `Pass` makes it easy to store passwords (or any other secret data). It
 aims to be secure and easy to integrate with existing Unix tools and
 version control. The encryption is all done by gpg, using one (or more)
