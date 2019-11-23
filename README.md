@@ -118,38 +118,38 @@ To setup a password store, you need to do the following:
 
   1. Copy `pass` somewhere in your `$PATH`.
 
-        cp pass ~/local/bin
+            cp pass ~/local/bin
 
   2. Create a gpg key if you don't already have one. Make sure you're
      using the gpg-agent for convenience.
 
-        gpg --gen-key
-        echo use-agent >>~/.gnupg/gpg.conf
+            gpg --gen-key
+            echo use-agent >>~/.gnupg/gpg.conf
 
   3. Create a repository for storing your data. If you choose another
      location, set `$PASS_HOME` to point `pass` to your repo.
 
-        git init ~/.pass
-        cd ~/.pass
-        echo '# recipient: me@example.com' >pass.gpg
-        echo '*.gpg diff=gpg' >.gitattributes
-        git add . && git commit -m 'start pass repo'
+            git init ~/.pass
+            cd ~/.pass
+            echo '# recipient: me@example.com' >pass.gpg
+            echo '*.gpg diff=gpg' >.gitattributes
+            git add . && git commit -m 'start pass repo'
 
   4. Tell git how to show diffs between gpg files.
 
-        git config --global diff.gpg.textconv 'gpg -qd --no-tty'
+            git config --global diff.gpg.textconv 'gpg -qd --no-tty'
 
   5. Install the vim plugin to make editing gpg files easier.
 
-        mkdir -p ~/.vim/plugin
-        cp gpg.vim ~/.vim/plugin
+            mkdir -p ~/.vim/plugin
+            cp gpg.vim ~/.vim/plugin
 
   6. Add some content. Note that your commit messages are _not_
      encrypted.
 
-        cd ~/.pass
-        vi pass.gpg
-        git commit -am 'added password for mysite'
+            cd ~/.pass
+            vi pass.gpg
+            git commit -am 'added password for mysite'
 
 
 File Formats
@@ -192,37 +192,37 @@ plugin that can help with filling form fields from `pass` data:
 
   1. Copy the `autofill` plugin to your `.pentadactyl` directory:
 
-        mkdir -p ~/.pentadactyl/plugins
-        cp pentadactyl/autofill.js ~/.pentadactyl/plugins/
+            mkdir -p ~/.pentadactyl/plugins
+            cp pentadactyl/autofill.js ~/.pentadactyl/plugins/
 
   2. Add a `url` field to your pass stanzas. E.g.:
 
-        example:
-            desc: My Example Site
-            url: https://example.com
-            user: foo
-            password: bar
+            example:
+                desc: My Example Site
+                url: https://example.com
+                user: foo
+                password: bar
 
   3. Auto-generate a mapping of URLs to stanzas:
 
-        pass --generate-autofill >~/.pentadactyl/pass.js
+            pass --generate-autofill >~/.pentadactyl/pass.js
 
      You can also do the mapping by hand if you do not want to keep the
      URLs in your password file (but take care to make your URL regexes
      sufficiently restrictive):
 
-        cat >~/.pentadactyl/pass.js <<\EOF
-        plugins.autofill.add('^https://example\.com/', 'example');
-        EOF
+            cat >~/.pentadactyl/pass.js <<\EOF
+            plugins.autofill.add('^https://example\.com/', 'example');
+            EOF
 
   4. Bind form-filling to a key (I use `Ctrl-F`), and load the mappings:
 
-        cat >>~/.pentadactylrc <<\EOF
-        loadplugins autofill
-        runtime pass.js
-        map <C-f> :js plugins.autofill.fill();<CR>
-        imap <C-f> <Esc>:js plugins.autofill.fill();<CR>
-        EOF
+            cat >>~/.pentadactylrc <<\EOF
+            loadplugins autofill
+            runtime pass.js
+            map <C-f> :js plugins.autofill.fill();<CR>
+            imap <C-f> <Esc>:js plugins.autofill.fill();<CR>
+            EOF
 
 With the steps above, hitting `Ctrl-F` at `example.com` will fill any
 input elements that look like usernames with the contents of
